@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { formatCount, formatUsd, shortAddress } from "@/lib/mock";
+import { formatCount, formatUsd, shortAddress } from "@/lib/format";
 import {
   LOOTING_TOKEN,
   lootingBurnHistory,

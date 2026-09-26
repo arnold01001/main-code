@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { useAppKit, useAppKitAccount, useDisconnect } from "@reown/appkit/react";
 import { WalletTermsModal } from "./WalletTermsModal";
 
 type WalletContextValue = {
@@ -13,12 +14,10 @@ type WalletContextValue = {
 };
 
 const WalletContext = createContext<WalletContextValue | null>(null);
-
-const demoAddress = "0x4c91aa7700de12bb3318e774c0ff21aa";
 const TERMS_KEY = "looting-wallet-terms-v1";
 
 function readAccepted(address: string) {
-  if (typeof window === "undefined") return false;
+  if (typeof window === "undefined" || !address) return false;
   try {
     return window.localStorage.getItem(`${TERMS_KEY}:${address.toLowerCase()}`) === "1";
   } catch {
@@ -35,41 +34,52 @@ function writeAccepted(address: string) {
 }
 
 export function WalletProvider({ children }: { children: React.ReactNode }) {
-  const [connected, setConnected] = useState(false);
+  const { open } = useAppKit();
+  const { address, isConnected } = useAppKitAccount();
+  const { disconnect: appKitDisconnect } = useDisconnect();
+
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
-    setTermsAccepted(readAccepted(demoAddress));
     setHydrated(true);
   }, []);
 
+  useEffect(() => {
+    if (!address) {
+      setTermsAccepted(false);
+      return;
+    }
+    setTermsAccepted(readAccepted(address));
+  }, [address]);
+
   const connect = useCallback(() => {
-    setConnected(true);
-    setTermsAccepted(readAccepted(demoAddress));
-  }, []);
+    void open({ view: "Connect" });
+  }, [open]);
 
   const disconnect = useCallback(() => {
-    setConnected(false);
-  }, []);
+    void appKitDisconnect();
+  }, [appKitDisconnect]);
 
   const acceptTerms = useCallback(() => {
-    writeAccepted(demoAddress);
+    if (!address) return;
+    writeAccepted(address);
     setTermsAccepted(true);
-  }, []);
+  }, [address]);
 
+  const connected = Boolean(isConnected && address);
   const needsTerms = hydrated && connected && !termsAccepted;
 
   const value = useMemo(
     () => ({
       connected,
-      address: demoAddress,
+      address: address ?? "",
       termsAccepted,
       connect,
       disconnect,
       acceptTerms,
     }),
-    [connected, termsAccepted, connect, disconnect, acceptTerms],
+    [connected, address, termsAccepted, connect, disconnect, acceptTerms],
   );
 
   return (

@@ -2,9 +2,13 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { emptyStats, getFees, getLaunchHolders, getLaunchTrades } from "@/lib/api";
 import { DRAFT_KEY } from "@/lib/draft";
+import { ETH_USD } from "@/lib/fees";
+import { formatPrice, formatUsd, shortAddress } from "@/lib/format";
 import { PONS_LAUNCH_WINDOW } from "@/lib/launch-window";
-import { formatPrice, formatUsd, marketStats, shortAddress, type Launch } from "@/lib/mock";
+import type { Holder, Launch, LaunchWithStats, MarketStats, TokenTrade } from "@/lib/types";
+import { useAsyncData } from "@/lib/use-async-data";
 import { GiftIcon, WalletIcon } from "./Icons";
 import { Pager } from "./Pager";
 import { SlidingTabs } from "./SlidingTabs";
@@ -12,11 +16,19 @@ import { Sparkline } from "./Sparkline";
 import { TokenLogo } from "./TokenLogo";
 import { useWallet } from "./Wallet";
 
+function resolveStats(launch: Launch | LaunchWithStats, initialStats?: MarketStats): MarketStats {
+  if (initialStats) return initialStats;
+  if ("stats" in launch && launch.stats) return launch.stats;
+  return emptyStats();
+}
+
 export function Terminal({
   launch,
   meta,
+  initialStats,
 }: {
-  launch: Launch;
+  launch: Launch | LaunchWithStats;
+  initialStats?: MarketStats;
   meta?: {
     website?: string;
     twitter?: string;
@@ -32,6 +44,21 @@ export function Terminal({
 }) {
   const { connected, address, connect } = useWallet();
   const quoteAsset = meta?.pair || "ETH";
+  const stats = resolveStats(launch, initialStats);
+  const { data: fees } = useAsyncData(() => getFees(), [], {
+    initial: null as Awaited<ReturnType<typeof getFees>> | null,
+  });
+  const ethUsd = fees?.ETH_USD ?? ETH_USD;
+  const { data: holders } = useAsyncData(
+    () => getLaunchHolders(launch.address),
+    [launch.address],
+    { initial: [] as Holder[], enabled: !launch.draft },
+  );
+  const { data: trades } = useAsyncData(
+    () => getLaunchTrades(launch.address, { limit: 50 }),
+    [launch.address],
+    { initial: [] as TokenTrade[], enabled: !launch.draft },
+  );
   const [side, setSide] = useState<"buy" | "sell">("buy");
   const [dockOpen, setDockOpen] = useState(false);
   const [slippage, setSlippage] = useState("10");
@@ -52,9 +79,8 @@ export function Terminal({
   const quote = useMemo(() => {
     const value = Number(amount);
     if (!Number.isFinite(value) || value <= 0 || launch.priceUsd <= 0) return 0;
-    const ethUsd = 3500;
     return side === "buy" ? (value * ethUsd) / launch.priceUsd : (value * launch.priceUsd) / ethUsd;
-  }, [amount, launch.priceUsd, side]);
+  }, [amount, ethUsd, launch.priceUsd, side]);
 
   const up = launch.change1h >= 0;
   const creatorShare = 100 - launch.luckyShare;
@@ -78,11 +104,9 @@ export function Terminal({
   const [presetDraft, setPresetDraft] = useState(["0.1", "0.25", "0.5", "1"]);
   const [presetError, setPresetError] = useState("");
   const presetRef = useRef<HTMLDivElement>(null);
-  const accruedEth = (launch.marketCap / 3500) * (launch.creatorTax / 100) * (0.35 + launch.progress / 200);
+  const accruedEth = (launch.marketCap / ethUsd) * (launch.creatorTax / 100) * (0.35 + launch.progress / 200);
   const creatorEth = (accruedEth * creatorShare) / 100;
   const poolEth = (accruedEth * launch.luckyShare) / 100;
-  const holders = holdersFor(launch);
-  const trades = tradesFor(launch);
   const pageSize = 10;
   const dataRows = dataTab === "holders" ? holders : trades;
   const pages = Math.max(1, Math.ceil(dataRows.length / pageSize));
@@ -731,7 +755,8 @@ export function Terminal({
           symbol={launch.symbol}
           price={launch.priceUsd}
           marketCap={launch.marketCap}
-          ath={marketStats(launch).ath}
+          ath={stats.ath}
+          ethUsd={ethUsd}
           amount={mine.amount}
           entry={mine.entry}
           wallet={address}
@@ -819,6 +844,7 @@ function Position({
   price,
   marketCap,
   ath,
+  ethUsd,
   amount,
   entry,
   wallet,
@@ -827,6 +853,7 @@ function Position({
   price: number;
   marketCap: number;
   ath: number;
+  ethUsd: number;
   amount: number;
   entry: number;
   wallet: string;
@@ -850,7 +877,7 @@ function Position({
     ath: true,
   });
   const scene = useMemo(() => pnlScenes[Math.floor(Math.random() * pnlScenes.length)], [symbol]);
-  const money = (usd: number) => (unit === "usd" ? formatUsd(usd) : formatEth(usd / 3500));
+  const money = (usd: number) => (unit === "usd" ? formatUsd(usd) : formatEth(usd / ethUsd));
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState("");
   const [portalReady, setPortalReady] = useState(false);
@@ -1320,42 +1347,6 @@ function BoostBadgeIcon() {
       />
     </svg>
   );
-}
-
-function tradesFor(launch: Launch) {
-  if (launch.draft || launch.priceUsd <= 0 || launch.marketCap <= 0) return [];
-  const supply = launch.marketCap / launch.priceUsd;
-  const minutes = [2, 5, 9, 14, 22, 31, 44, 61, 80, 110, 150, 190, 240, 320, 410, 560];
-  return minutes.map((minute, index) => {
-    const side = index % 3 === 1 ? "Sell" : "Buy";
-    const amount = supply * (0.003 + index * 0.0014);
-    const wallet = index === 1 ? "0x4c91aa7700de12bb3318e774c0ff21aa" : `0x${(index * 7919 + 4096).toString(16).padStart(8, "0")}aa7700de12bb`;
-    return {
-      id: `${launch.symbol}-${index}`,
-      side,
-      address: wallet,
-      amount,
-      eth: (amount * launch.priceUsd) / 3500,
-      time: minute < 60 ? `${minute}m` : `${Math.round(minute / 60)}h`,
-    };
-  });
-}
-
-function holdersFor(launch: Launch) {
-  if (launch.draft || launch.priceUsd <= 0 || launch.marketCap <= 0) return [];
-  const supply = launch.marketCap / launch.priceUsd;
-  const shares = [18.4, 11.2, 7.6, 5.1, 3.8, 2.9, 2.1, 1.4, 1.1, 0.92, 0.74, 0.61, 0.48, 0.39, 0.31, 0.24, 0.18, 0.12];
-  return shares.map((share, index) => {
-    const wallet = index === 0 ? launch.creator : index === 2 ? "0x4c91aa7700de12bb3318e774c0ff21aa" : `0x${(index * 6151 + 2048).toString(16).padStart(8, "0")}c0ff21aa7700`;
-    const entry = launch.priceUsd * (1 - ((index - 3) * launch.change1h) / 400);
-    return {
-      rank: index + 1,
-      address: wallet,
-      amount: (supply * share) / 100,
-      share,
-      entry: Math.max(entry, launch.priceUsd * 0.2),
-    };
-  });
 }
 
 function formatEth(value: number) {

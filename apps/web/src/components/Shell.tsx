@@ -4,7 +4,10 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { FormEvent, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { formatUsd, launches, shortAddress } from "@/lib/mock";
+import { getCreatorLaunches, getFees, getLaunches } from "@/lib/api";
+import { formatUsd, shortAddress } from "@/lib/format";
+import type { FeesConfig, LaunchWithStats } from "@/lib/types";
+import { useAsyncData } from "@/lib/use-async-data";
 import { BookIcon, NavIcon, PanelIcon, PlusIcon, SearchIcon, TelegramIcon, XIcon } from "./Icons";
 import { RouteTransition } from "./RouteTransition";
 import { TokenLogo } from "./TokenLogo";
@@ -54,8 +57,11 @@ const sideLinks = [
   { href: "https://t.me/lootingpad", label: "Telegram", icon: <TelegramIcon size={20} />, external: true },
 ];
 
-function creatorFeeEth(launch: (typeof launches)[number]) {
-  const accrued = (launch.marketCap / 3500) * (launch.creatorTax / 100) * (0.35 + launch.progress / 200);
+const DEFAULT_ETH_USD = 3500;
+
+function creatorFeeEth(launch: LaunchWithStats, ethUsd: number) {
+  const rate = ethUsd > 0 ? ethUsd : DEFAULT_ETH_USD;
+  const accrued = (launch.marketCap / rate) * (launch.creatorTax / 100) * (0.35 + launch.progress / 200);
   return (accrued * (100 - launch.luckyShare)) / 100;
 }
 
@@ -73,6 +79,14 @@ export function Shell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { connected, address, connect, disconnect } = useWallet();
+  const { data: launches } = useAsyncData(() => getLaunches({ limit: 50 }), [], {
+    initial: [] as LaunchWithStats[],
+    pollMs: 30000,
+  });
+  const { data: fees } = useAsyncData(() => getFees(), [], {
+    initial: null as FeesConfig | null,
+  });
+  const ethUsd = fees?.ETH_USD ?? DEFAULT_ETH_USD;
   const [creatorClaimed, setCreatorClaimed] = useState(false);
   const [query, setQuery] = useState("");
   const [searchMounted, setSearchMounted] = useState(false);
@@ -160,7 +174,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
     router.push(term ? `/?q=${encodeURIComponent(term)}` : "/");
   }
 
-  const tape = [...launches, ...launches];
+  const tape = launches.length > 0 ? [...launches, ...launches] : [];
 
   return (
     <div className={`app ${open ? "is-open" : ""}`}>
@@ -173,7 +187,14 @@ export function Shell({ children }: { children: React.ReactNode }) {
             <img src="/logo-wordmark.png" alt="" className="brand-word" fetchPriority="high" decoding="async" />
           </Link>
         </div>
-        {connected ? <CreatorClaim address={address} claimed={creatorClaimed} onClaim={() => setCreatorClaimed(true)} /> : null}
+        {connected ? (
+          <CreatorClaim
+            address={address}
+            claimed={creatorClaimed}
+            ethUsd={ethUsd}
+            onClaim={() => setCreatorClaimed(true)}
+          />
+        ) : null}
         <nav ref={navRef} className="rail-nav" aria-label="Primary">
           <span
             className="rail-pill"
@@ -363,15 +384,20 @@ export function Shell({ children }: { children: React.ReactNode }) {
 function CreatorClaim({
   address,
   claimed,
+  ethUsd,
   onClaim,
 }: {
   address: string;
   claimed: boolean;
+  ethUsd: number;
   onClaim: () => void;
 }) {
-  const mine = launches.filter((launch) => launch.creator.toLowerCase() === address.toLowerCase());
+  const { data: mine } = useAsyncData(() => getCreatorLaunches(address), [address], {
+    initial: [] as LaunchWithStats[],
+    enabled: Boolean(address),
+  });
   if (mine.length === 0) return null;
-  const total = mine.reduce((sum, launch) => sum + creatorFeeEth(launch), 0);
+  const total = mine.reduce((sum, launch) => sum + creatorFeeEth(launch, ethUsd), 0);
 
   return (
     <section className="creator-claim" aria-label="Creator fee">

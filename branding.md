@@ -1,9 +1,10 @@
 # LOOTING — Brand, Positioning, Narrative & Content OS
 
-> **Status:** Brand bible v1.0  
+> **Status:** Brand bible v1.1 — image theme LOCKED (§8.1)  
 > **Language:** English only (global)  
 > **Use:** Source of truth for X posts, Telegram, articles, image prompts, video concepts, and share cards.  
-> **Product source:** `LOOTING_PRODUCT_SPEC.md` + shipped UI (`lootingpad.com`)
+> **Product source:** `LOOTING_PRODUCT_SPEC.md` + shipped UI (`lootingpad.com`)  
+> **Image canon:** `apps/web/public/lockcard.png` + `assets/brand/` (approved samples)
 
 ---
 
@@ -15,7 +16,7 @@ Every piece of content must pull from this document:
 |-----|-----------|
 | X posts / threads | §6 hooks, §5 pillars, §4 frames, §4.4 reframe |
 | Articles / litepaper blurbs | §2 positioning, §3 narrative, §12 compliance |
-| Image generation | §8 visual + §4.3 scene scripts + one frame from §4 |
+| Image generation | **§8.1 locked theme** + §4.3 scene + master prompt |
 | Video concepts | §4.3 scenes + loot-loop storyboard in §10 |
 | Share / lock / PnL cards | Footer: `lootingpad.com \| Robinhood Chain` |
 | Competitive posts | §2.3 matrix — contrast category, never trash rivals by name-spam |
@@ -347,11 +348,25 @@ Theme: **dark only**. Subtle dot-grid atmosphere. Accent buttons: lime on near-b
 
 ### Marks & assets
 
-- Logo: `/logo.png`, wordmark `/logo-wordmark.png`  
-- Share: `sharecard-bg.png`, `share-coins.png`, `share-crystal.png`, `share-gift.png`  
-- PnL: `pnlcard.png` … `pnlcard8.png`  
-- Dev Lock: `lockcard.png`  
-- Quote pairs: `pairs/{eth,aapl,...}`  
+| Asset | Path | Use |
+|-------|------|-----|
+| **Logo only** | `apps/web/public/logo.png` | Icon alone — crate stamps, favicon-style marks, end-card icon, suit badge |
+| **Logo wordmark** | `apps/web/public/logo-wordmark.png` | Header / banner branding when name is shown with the mark |
+| Wordmark art (UI) | same as above | Never redraw “LOOTING” in a new font next to a reinvented icon |
+| Share / PnL / lock | `share*.png`, `pnlcard*.png`, `lockcard.png` | Product cards; new gens still follow logo rules below |
+| Brand exports | `assets/brand/` | Approved social outputs |
+
+#### Logo usage — STRICT (never break)
+
+1. **Need name + mark together** → composite from **`logo-wordmark.png` only**. Pass it as a reference image every gen. Do not invent a new wordmark typeface or rearrange the icon.  
+2. **Need icon only** → **`logo.png` only**. Nine glossy lime rounded squares (1 center + 8 around).  
+3. **Never** invent alternate logos (cloud-smile, hollow ring, different tile counts, flat app icons, etc.).  
+4. **Never** place a separate giant “LOOTING” text beside a separately redrawn icon when the wordmark file already exists — use the wordmark file.  
+5. **Scale in banners:** wordmark / logo height ≈ **8–12% of banner height max**; generous padding from edges. Prefer airy layout over oversized brand block.  
+6. Mascot visor happy-arcs = **character face only**, not a logo substitute.  
+7. **Preferred production method for text banners:** generate mascot art without inventing a logo, then **composite** the real `logo.png` / `logo-wordmark.png` in layout (see `assets/brand/_compose_banner.py`). Do not rely on the image model to redraw the mark.  
+
+If a generated image shows the wrong mark, reject and regenerate or composite the real PNG.
 
 ### Share-card footer (mandatory)
 
@@ -359,12 +374,119 @@ Theme: **dark only**. Subtle dot-grid atmosphere. Accent buttons: lime on near-b
 lootingpad.com  |  Robinhood Chain
 ```
 
-### Image-gen brief defaults
+For cinematic key visuals (mascot art), footer may be domain-only:
 
-- Palette: charcoal `#171717` + lime `#ccff00` + optional gold `#f5c451`  
-- Mood: raid / terminal / loot drop — **not** neon casino, not purple glow, not cream editorial  
-- Prefer product UI, lock cards, box unlock, season ladder over abstract blobs  
-- No detached promo stickers over hero art unless they are product UI chrome  
+```text
+lootingpad.com
+```
+
+### 8.1 Image theme — LOCKED (approved sample)
+
+**Status:** Fixed as of brand bible update. All future image gens must match this world.  
+**Canon refs:**  
+- Product Dev Lock art: `apps/web/public/lockcard.png`  
+- Approved social sample (1:1): `assets/brand/looting-sample-exit-unlock.png`  
+- Approved X banner (16:9): `assets/brand/looting-x-banner-exit-unlock.png`
+
+Do not invent a second mascot, palette, or art style without an explicit rebrand.
+
+#### Style lock
+
+| Attribute | Spec |
+|-----------|------|
+| Medium | High-fidelity **3D cinematic render** / toy-photography |
+| Character style | Chibi / designer-toy (large head, stocky body) |
+| Lighting | High contrast; primary glow from loot object (lime/gold); dark bokeh background |
+| Environment | Dark industrial vault / warehouse; glossy reflective floor |
+| Materials | Matte tactical plastic on suit; glossy visor; rugged crate; translucent crystal/lock glow |
+| Mood | Friendly security + loot discovery — approachable raid, not horror, not casino |
+
+#### Palette lock (images)
+
+| Role | Hex | Notes |
+|------|-----|-------|
+| Base / void | `#171717` → near-black | Dominant environment |
+| Accent / energy | `#ccff00` | Suit trim, headphones, logo eyes, crate mark, sparks |
+| Loot / prize glow | `#f5c451` → warm gold-lime | Crystal, padlock interior, reward light |
+| Suit body | Matte black | Tactical plates, helmet shell |
+| Forbidden | Purple neon, pink casino, cream editorial, flat corporate blue, rainbow gradients |
+
+#### Mascot lock (“Loot bot”)
+
+Always the same character:
+
+- Small humanoid robot / astronaut toy  
+- Matte **black tactical suit** with **neon lime** accents on joints, kneepads, boots, arm bands, shoulder pads  
+- **Rounded black helmet** / screen-face with **two glowing lime closed-arc “happy eyes”**  
+- **Large circular neon-lime headphones** on both sides of the head  
+- Optional: small **official 9-square logo** on chest plate (not cloud-smile)  
+- Personality: curious, protective, excited at unlock — never angry, never horror, never hyper-realistic human  
+
+#### Logo mark in art (LOCKED)
+
+| Need | File | Rule |
+|------|------|------|
+| Branding with name | `logo-wordmark.png` | Exact asset; small scale in banners |
+| Icon only | `logo.png` | Exact 9-square glass tiles |
+
+| Do | Don’t |
+|----|--------|
+| Attach the real PNG as a generation reference every time | Redraw / approximate the logo from memory |
+| Keep brand mark small (≤ ~12% banner height) | Oversized logo or oversized “LOOTING” type |
+| Stamp crates with `logo.png` only | Cloud-smile, hollow rings, or any other mark |
+| Keep visor arcs as mascot face only | Treat visor as the brand logo |
+
+#### Recurring props (use by scene)
+
+| Prop | When |
+|------|------|
+| Giant glowing **padlock** (gold/translucent) | Dev Lock / trust theater (Scene E) |
+| Rugged **black loot crate** with **9-square logo** stamp, cracking open | Exit unlock / box open (Scene C–D) |
+| Floating **crystal / prize shard** from crate | Reward reveal (Scene D) |
+| Stacked black tactical crates | Staging / launch / vault set dressing |
+| Season ladder cues (bronze / silver / gold light) | Season reset (Scene G) — keep subtle, same world |
+
+#### Composition rules
+
+- One hero moment — mascot + one primary prop  
+- Brand-first: mascot or logo mark readable at thumbnail size  
+- No dashboard clutter, no floating promo badges, no multi-panel collage  
+- Ratios: **1:1** default for X; **9:16** for reels; **16:9** for article headers  
+- Text: small, clean, lime or soft white — `lootingpad.com` (and `| Robinhood Chain` on product share cards)
+
+#### Hard avoid
+
+- Second mascot / different helmet face  
+- Casino jackpot, slot machines, spin wheels  
+- Purple/pink neon cyberpunk cliché  
+- Photoreal humans, anime 2D pivot, flat vector-only posters (unless UI chrome export)  
+- “Pump clone” green slime / Solana-meme chaos aesthetic  
+
+#### Master prompt (copy for every gen)
+
+```text
+LOOTING brand key visual. 3D cinematic toy-photography render.
+Mascot: same chibi robot — matte black tactical suit, neon lime #ccff00 accents on joints/boots/headphones, rounded black helmet with two glowing lime happy closed-arc LED eyes (character face only). Optional small official 9-square logo on chest — NEVER cloud-smile brand mark.
+Official logos (STRICT): header uses exact logo-wordmark.png (small, ≤12% height). Crate/icon uses exact logo.png only. Never invent alternate logos. Never oversized brand type.
+Palette: charcoal #171717 void, lime #ccff00 energy, optional gold #f5c451 loot glow.
+Environment: dark industrial vault, glossy reflective floor, heavy bokeh, high-contrast cinematic light.
+Scene: {A–G from §4.3} — {one-sentence action}.
+Props: {padlock | loot crate | crystal | crates} consistent with locked brand.
+Include tiny footer: lootingpad.com
+Must match apps/web/public/logo.png + logo-wordmark.png exactly (reference those files). Mascot world from lockcard + assets/brand. No purple neon, no casino, no second mascot, no invented logos, no oversized wordmark, no UI dashboard clutter.
+```
+
+#### Scene → prompt seeds (locked)
+
+| Scene | Seed |
+|-------|------|
+| A Launch | Mascot beside sealed crate stamped with official 9-square logo; lime tape light; “going live” energy |
+| B Trade anywhere | Mascot with multiple faint terminal silhouettes behind; single lime XP spark at chest |
+| C Exit unlock | Mascot next to crate just cracking; lime light spilling out |
+| D Box open | Mascot reaching toward crystal rising from open crate (approved sample) |
+| E Dev Lock | Mascot leaning on giant glowing gold padlock (lockcard energy) |
+| F Graduate | Mascot watching crate transform / progress bar of lime light complete |
+| G Season | Mascot under soft bronze→silver→gold rim light; ladder of crates |
 
 ---
 
@@ -390,7 +512,7 @@ lootingpad.com  |  Robinhood Chain
 | X thread | 5–9 posts | narrative §3.3 | One idea per post |
 | TG flash | 1–3 short lines | loot_loop / season_raid | High signal, low spam |
 | Article | 600–1200 words | positioning + spine | Open with conflict, close with CTA |
-| Image | 1:1 or 16:9 | one scene from §4.3 | Brief must name frame + scene |
+| Image | 1:1 or 16:9 | one scene from §4.3 | Brief must name frame + scene; **always attach logo.png and/or logo-wordmark.png**; brand mark ≤12% height |
 | Video / reel | 15–45s | loot_loop storyboard | See below |
 | Share card | product export | real_rewards / trust | Footer mandatory |
 
@@ -415,15 +537,17 @@ lootingpad.com  |  Robinhood Chain
 | Sat | Meme / raid energy (still on-voice) |
 | Sun | Build-in-public / recap |
 
+**Executable week plan (copy-ready posts):** [`assets/brand/TWITTER_WEEK_01.md`](assets/brand/TWITTER_WEEK_01.md)
+
 ### Image prompt template
 
+Always use **§8.1 Master prompt**. Fill scene + props only:
+
 ```text
-Frame: {frame_id}
-Scene: {A–G}
-Visual: charcoal #171717, lime #ccff00, Sora-like bold type, LOOTING product energy
-Must include: {one product truth from §2.5}
-Must avoid: casino neon, jackpot language, purple glow, fake volume flex
-Footer text if card: lootingpad.com | Robinhood Chain
+{paste §8.1 Master prompt}
+Scene: {A–G} — {one-sentence action}
+Props: {padlock | loot crate | crystal | crates}
+Reference: apps/web/public/lockcard.png + approved exit-unlock sample
 ```
 
 ### X post template
@@ -484,10 +608,11 @@ Always true in public content:
 | Rails | Pons V2 (external) |
 | Promise | Trade anywhere → loot after exit |
 | Accent | `#ccff00` on `#171717` |
+| Image theme | **LOCKED** — 3D toy-photo mascot; logos only from `logo.png` / `logo-wordmark.png` (§8) |
 | Nemesis (category) | UI-trapped points & hold-farm theater |
 | Closest rival to contrast carefully | Flap (hold → stocks) vs LOOTING (trade → exit → loot) |
 | Never say | “Pons killer,” “guaranteed,” “safe launch,” “next Pump” |
 
 ---
 
-*End of brand bible v1.0 — expand seasons, X handle, and competitor rows as the market moves; keep the value wedge stable.*
+*End of brand bible v1.1 — image theme locked in §8.1; expand seasons, X handle, and competitor rows as the market moves; keep the value wedge and visual world stable.*
