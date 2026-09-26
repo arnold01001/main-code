@@ -12,6 +12,12 @@ export type Launch = {
   creatorTax: number;
   phase: "curve" | "graduated";
   draft?: boolean;
+  /** Creator supply locked / vesting via Dev Lock */
+  locked?: boolean;
+  /** Socials / profile updated on Dexscreener */
+  socialUpdated?: boolean;
+  /** Active DexBoost count on Dexscreener (0/undefined = none) */
+  dexBoost?: number;
 };
 
 export const launches: Launch[] = [
@@ -28,6 +34,8 @@ export const launches: Launch[] = [
     luckyShare: 20,
     creatorTax: 1,
     phase: "curve",
+    locked: true,
+    socialUpdated: true,
   },
   {
     address: "0x12ab90ff33c1d8e774aa0199bb221100de44a901",
@@ -42,6 +50,8 @@ export const launches: Launch[] = [
     luckyShare: 50,
     creatorTax: 1,
     phase: "curve",
+    locked: true,
+    dexBoost: 30,
   },
   {
     address: "0x90de44aa771100cc2288bb9012ff33c1aa0199c2",
@@ -98,6 +108,9 @@ export const launches: Launch[] = [
     luckyShare: 40,
     creatorTax: 1,
     phase: "curve",
+    locked: true,
+    socialUpdated: true,
+    dexBoost: 100,
   },
   {
     address: "0x88c01aa98e7712bb09331100aa77c1de44a90112",

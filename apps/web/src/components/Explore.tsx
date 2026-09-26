@@ -843,7 +843,7 @@ export function Explore() {
                         className="coin-cell"
                         onClick={(event) => event.stopPropagation()}
                       >
-                        <span className="num w-6 text-[var(--muted)]">{rank}</span>
+                        <span className="coin-rank">{rank}</span>
                         <TokenLogo symbol={launch.symbol} size={26} />
                         <span className="coin-name">{launch.name}</span>
                         <span className="ticker text-[var(--muted)]">${launch.symbol}</span>

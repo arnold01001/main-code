@@ -32,6 +32,7 @@ const navGroups = [
   {
     title: "Protocol",
     links: [
+      { href: "/looting", label: "$LOOTING" },
       { href: "/staking", label: "Staking" },
       { href: "/analytics", label: "Analytics" },
     ],
@@ -49,7 +50,7 @@ const accountLink = { href: "/account", label: "Account" };
 
 const sideLinks = [
   { href: "https://x.com", label: "X", icon: <XIcon size={20} />, external: true },
-  { href: "/docs", label: "Docs", icon: <BookIcon size={20} />, external: false },
+  { href: "/docs", label: "About", icon: <BookIcon size={20} />, external: false },
   { href: "https://t.me/lootingpad", label: "Telegram", icon: <TelegramIcon size={20} />, external: true },
 ];
 

@@ -8,17 +8,26 @@ export function TokenLogo({ symbol, size = 32 }: { symbol: string; size?: number
 }
 
 function ground(symbol: string) {
+  if (symbol === "LOOTING") return "#111111";
   if (symbol === "HARBOR" || symbol === "QUIET") return "#111111";
   if (symbol === "THREAD" || symbol === "KEY") return "#f4f4f4";
   return "#ccff00";
 }
 
 function ink(symbol: string) {
-  return symbol === "HARBOR" || symbol === "QUIET" ? "#ccff00" : "#111111";
+  return symbol === "HARBOR" || symbol === "QUIET" || symbol === "LOOTING" ? "#ccff00" : "#111111";
 }
 
 function Mark({ symbol }: { symbol: string }) {
   const stroke = ink(symbol);
+  if (symbol === "LOOTING") {
+    return (
+      <g fill="none" stroke={stroke} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="20" cy="20" r="10" />
+        <path d="M20 12.5c2.2 2.5 3.8 4.8 3.8 7.1a3.8 3.8 0 0 1-7.6 0c0-2.3 1.6-4.6 3.8-7.1Z" />
+      </g>
+    );
+  }
   if (symbol === "VAULT") {
     return (
       <g fill="none" stroke={stroke} strokeWidth="2">

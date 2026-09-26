@@ -4,6 +4,13 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { formatCount, formatUsd, launches, leaderboard, marketStats, shortAddress, type Launch } from "@/lib/mock";
+import {
+  formatStakingTokens,
+  lockLabel,
+  seedStakingHistory,
+  STAKING_NOW,
+  type StakingHistoryRow,
+} from "@/lib/staking-events";
 import { NavIcon } from "./Icons";
 import { Pager } from "./Pager";
 import { SlidingTabs } from "./SlidingTabs";
@@ -14,6 +21,7 @@ import { WalletAvatar } from "./WalletAvatar";
 const SILVER = 1000;
 const GOLD = 5000;
 const TRADES_PER_PAGE = 10;
+const STAKING_PER_PAGE = 10;
 
 const tierColor: Record<string, string> = {
   Gold: "#f5c451",
@@ -21,7 +29,7 @@ const tierColor: Record<string, string> = {
   Bronze: "#d08a4c",
 };
 
-type AccountTab = "deployed" | "trades";
+type AccountTab = "deployed" | "trades" | "staking";
 
 export function Account() {
   const { connected, address, connect } = useWallet();
@@ -32,7 +40,7 @@ export function Account() {
       <div className="page-head">
         <div>
           <h1 className="explore-title">Account</h1>
-          <p className="page-note">Season XP, deployed tokens, and trades for this wallet.</p>
+          <p className="page-note">Season XP, deployed tokens, trades, and staking for this wallet.</p>
         </div>
       </div>
       <nav className="account-more" aria-label="More">
@@ -67,6 +75,8 @@ function Profile({ row, address }: { row: (typeof leaderboard)[number]; address:
   const nextLabel = next ? `${row.tier === "Bronze" ? "Silver" : "Gold"} at ${formatCount(next)} XP` : "Top tier";
   const deployed = deployedFor(address);
   const trades = historyFor();
+  const staking = seedStakingHistory;
+  const stakingRewards = staking.reduce((sum, item) => sum + item.reward, 0);
 
   return (
     <>
@@ -119,17 +129,28 @@ function Profile({ row, address }: { row: (typeof leaderboard)[number]; address:
             items={[
               { id: "deployed" as const, label: `Deployed (${deployed.length})` },
               { id: "trades" as const, label: `Trades (${trades.length})` },
+              { id: "staking" as const, label: `Staking (${staking.length})` },
             ]}
             value={tab}
             onChange={setTab}
           />
           <p className="page-note">
-            {tab === "deployed" ? "Coins this wallet launched on LOOTING." : "Buys and sells on LOOTING tokens."}
+            {tab === "deployed"
+              ? "Coins this wallet launched on LOOTING."
+              : tab === "trades"
+                ? "Buys and sells on LOOTING tokens."
+                : `Vault stakes, claims, and ${formatStakingTokens(stakingRewards)} rewards earned.`}
           </p>
         </div>
 
         <div key={tab} className="account-board page-swap">
-          {tab === "deployed" ? <DeployedBoard rows={deployed} /> : <TradesBoard rows={trades} />}
+          {tab === "deployed" ? (
+            <DeployedBoard rows={deployed} />
+          ) : tab === "trades" ? (
+            <TradesBoard rows={trades} />
+          ) : (
+            <StakingBoard rows={staking} />
+          )}
         </div>
       </section>
     </>
@@ -314,6 +335,109 @@ function TradesBoard({ rows }: { rows: TradeRow[] }) {
   );
 }
 
+function StakingBoard({ rows }: { rows: StakingHistoryRow[] }) {
+  const router = useRouter();
+  const [page, setPage] = useState(1);
+  const pages = Math.max(1, Math.ceil(rows.length / STAKING_PER_PAGE));
+  const safePage = Math.min(page, pages);
+  const paged = rows.slice((safePage - 1) * STAKING_PER_PAGE, safePage * STAKING_PER_PAGE);
+
+  if (rows.length === 0) {
+    return (
+      <div className="sheet account-blank">
+        <p className="account-blank-title">No staking history yet</p>
+        <p className="page-note">Stakes, claims, and rewards from public vaults will show up here.</p>
+        <Link href="/staking" className="claim-btn claim-all">
+          Browse staking
+        </Link>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <div className="table-wrap">
+        <table className="coin-table account-staking-table">
+          <thead>
+            <tr>
+              <th>Type</th>
+              <th>Token</th>
+              <th>CA</th>
+              <th>Lock</th>
+              <th>Amount</th>
+              <th>Reward</th>
+              <th>Time</th>
+            </tr>
+          </thead>
+          <tbody>
+            {paged.map((row) => (
+              <tr
+                key={row.id}
+                onClick={() => router.push(`/staking?pool=${encodeURIComponent(row.eventId)}`)}
+              >
+                <td>
+                  <span className={`side-pill ${row.kind}`}>{stakingKindLabel(row.kind)}</span>
+                </td>
+                <td>
+                  <Link
+                    href={`/staking?pool=${encodeURIComponent(row.eventId)}`}
+                    className="account-token"
+                    onClick={(event) => event.stopPropagation()}
+                  >
+                    <TokenLogo symbol={row.symbol} size={22} />
+                    <span>${row.symbol}</span>
+                  </Link>
+                </td>
+                <td className="account-ca">{tinyCa(row.address)}</td>
+                <td>{lockLabel(row.lock)}</td>
+                <td className="num">
+                  {row.amount > 0 ? formatStakingTokens(row.amount) : "—"}
+                </td>
+                <td className={`num${row.reward > 0 ? " account-xp-cell" : " text-mute"}`}>
+                  {row.reward > 0 ? `+${formatStakingTokens(row.reward)}` : "—"}
+                </td>
+                <td>{relativeAge(row.at)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {rows.length > STAKING_PER_PAGE ? (
+          <Pager page={safePage} pages={pages} onChange={setPage} />
+        ) : null}
+      </div>
+      <ul className="app-rows">
+        {paged.map((row) => (
+          <li
+            key={row.id}
+            onClick={() => router.push(`/staking?pool=${encodeURIComponent(row.eventId)}`)}
+          >
+            <span className={`side-pill ${row.kind}`}>{stakingKindLabel(row.kind)}</span>
+            <TokenLogo symbol={row.symbol} size={28} />
+            <div>
+              <strong>${row.symbol}</strong>
+              <span>
+                {lockLabel(row.lock)}
+                {row.reward > 0 ? ` · +${formatStakingTokens(row.reward)} reward` : ""}
+              </span>
+            </div>
+            <b>
+              {row.kind === "claim"
+                ? `+${formatStakingTokens(row.reward)}`
+                : formatStakingTokens(row.amount)}
+              <span>{relativeAge(row.at)}</span>
+            </b>
+          </li>
+        ))}
+      </ul>
+      {rows.length > STAKING_PER_PAGE ? (
+        <div className="account-mobile-pager">
+          <Pager page={safePage} pages={pages} onChange={setPage} />
+        </div>
+      ) : null}
+    </>
+  );
+}
+
 type TradeRow = {
   id: string;
   launch: Launch;
@@ -329,7 +453,7 @@ function Empty({ onConnect }: { onConnect: () => void }) {
     <section className="sheet account-empty">
       <p className="account-kicker">Season 01</p>
       <p className="account-empty-title">Connect to see your account</p>
-      <p className="page-note">Deployed tokens, tier, boxes, and trades on LOOTING show up here.</p>
+      <p className="page-note">Deployed tokens, tier, boxes, trades, and staking on LOOTING show up here.</p>
       <button type="button" className="claim-btn claim-all" onClick={onConnect}>
         Connect
       </button>
@@ -384,4 +508,17 @@ function formatTokens(value: number) {
 
 function tinyCa(address: string) {
   return `${address.slice(0, 4)}…${address.slice(-3)}`;
+}
+
+function stakingKindLabel(kind: StakingHistoryRow["kind"]) {
+  if (kind === "stake") return "Stake";
+  if (kind === "claim") return "Claim";
+  return "Unstake";
+}
+
+function relativeAge(at: number) {
+  const minute = Math.max(1, Math.round((STAKING_NOW - at) / 60_000));
+  if (minute < 60) return `${minute}m`;
+  if (minute < 1440) return `${Math.floor(minute / 60)}h`;
+  return `${Math.floor(minute / 1440)}d`;
 }
